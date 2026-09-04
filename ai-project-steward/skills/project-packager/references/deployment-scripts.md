@@ -20,7 +20,7 @@ Generate scripts for the repository's actual deployment model. All scripts use P
 └── .env.example                # never a real secret-bearing .env
 ```
 
-The tar.gz contains exactly this single top-level directory. Optional Dockerfile, Compose, nginx, status, restart, and log helpers are included only when the project uses them.
+The tar.gz contains exactly this single top-level directory. Optional Dockerfile, Compose, nginx, status, restart, log helpers, and the Windows one-click `start.bat`/`stop.bat` are included only when the project uses them.
 
 ## Version source
 
@@ -36,6 +36,10 @@ Read the version from the project's existing authoritative source. Use a root VE
 | `start.sh` | Validates configuration and prerequisites, starts through the real service manager, waits with a bounded timeout, and verifies readiness/health rather than only process existence. |
 | `stop.sh` | Stops gracefully, waits with a timeout, escalates only when configured, and remains idempotent when already stopped. |
 | `upgrade.sh` | Runs from the extracted new-version directory; locks against concurrent upgrades, validates package/version, backs up, stops old version, preserves mutable data/config, switches immutable resources atomically, migrates, starts, checks health, and rolls back on failure. |
+
+## Windows one-click scripts
+
+`scaffold` also generates `start.bat` and `stop.bat` so the local service can be started and stopped with one double-click on Windows hosts. They use CRLF line endings, resolve their own directory via `cd /d "%~dp0"`, stay idempotent (re-running `start.bat` reports the running PID and exits 0; `stop.bat` exits 0 when already stopped), record the process id in `app.pid`, write service output to `run.log`, pause on errors so double-click windows stay visible, and probe `HEALTH_URL` (optional environment variable) for readiness when set. Docker projects use `docker compose up -d`/`down` with a `COMPOSE_FILE` override instead of the PID model. The same rules apply: replace the `TODO(project)` markers with the real start command or Windows service manager (NSSM, Task Scheduler, PM2, Windows service) and never invent paths, ports, or credentials.
 
 ## Upgrade model
 

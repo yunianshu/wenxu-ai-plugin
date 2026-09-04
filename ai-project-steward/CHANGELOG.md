@@ -6,6 +6,7 @@ All notable changes to AI Project Steward are documented here.
 
 ### Added
 
+- Windows one-click `start.bat`/`stop.bat` in `scaffold` output: CRLF line endings, PID-file idempotency, `run.log` output capture, optional `HEALTH_URL` readiness probing, error `pause` for double-click visibility, and `docker compose up/down` for Docker projects.
 - `release_artifacts.py scaffold`: generates stack-aware deployment script templates (package/backup/restore/start/stop/upgrade) for exactly the missing files when a repository has no packaging files, records a user-confirmed initial version into `VERSION`, and reports remaining `TODO(project)` markers. `bundle` now scaffolds missing scripts automatically and flags them in its result.
 - Versioned tar.gz deployment packaging with a single top-level directory, stack detection, checksums, and package/backup/restore/start/stop/upgrade script contracts.
 - Archify-compatible diagram workspaces with typed JSON sources, validated HTML outputs, and receipts.
