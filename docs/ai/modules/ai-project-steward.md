@@ -63,6 +63,6 @@ py ai-project-steward/scripts/project_docs.py audit --root .
 - **变更**：发布包版本改为从项目权威版本文件 / 构建清单解析，版本冲突会阻断打包。
 - **变更**：架构与流程图改用 [archify](https://github.com/tt-a1i/archify) 模型替代 Mermaid 作为主格式。
 - **修复**：ZCode 钩子改用跨宿主兼容的 `CLAUDE_PLUGIN_ROOT` 路径变量，并附带原生 ZCode 清单。
-- **修复**：Stop 钩子 `doc_guard.py` 在宿主下发字面 `null` 或非对象 payload 时不再崩溃退出（改为放行），并对钩子 JSON 输出做 ASCII 转义，避免非 ASCII 的阻断原因在 Windows 管道编码下乱码。
+- **修复**：Stop 钩子 doc_guard.py 在宿主下发字面 `null` 或非对象 payload 时不再崩溃退出（改为放行），并对钩子 JSON 输出做 ASCII 转义，避免非 ASCII 的阻断原因在 Windows 管道编码下乱码。
 
 英文原文见 `ai-project-steward/CHANGELOG.md`。
