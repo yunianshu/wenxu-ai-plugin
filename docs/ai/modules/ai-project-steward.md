@@ -40,7 +40,7 @@
 
 | 脚本 | 中文说明 |
 | --- | --- |
-| project_docs.py | 初始化并校验 AI 可读仓库文档（模式：init / sync / impact / audit）。 |
+| project_docs.py | 初始化并校验 AI 可读仓库文档（模式：init / sync / impact / audit）；支持 `--subdir` 为插件集合仓库的子目录建立并同步独立文档集，根级 sync/audit 自动发现并覆盖带 `.project-docs.json` 标记的子目录文档集。 |
 | diagram_docs.py | 在项目内管理 Archify 图表工作区。 |
 | doc_guard.py | 一次性 Stop 钩子，让收尾前把文档影响纳入考量。 |
 | release_artifacts.py | 探测、收集并审计项目的发布产物；`scaffold` 可在仓库缺失打包文件时按检测到的技术栈生成部署脚本模板（含 Windows 一键启动/停止的 start.bat 与 stop.bat，不覆盖已有文件、不自行发明版本），`bundle` 遇缺失脚本会自动补建并在结果中标注。 |
@@ -56,6 +56,7 @@ py ai-project-steward/scripts/project_docs.py audit --root .
 
 ## 变更摘要（插件 CHANGELOG：Unreleased）
 
+- **新增**：插件集合仓库的子目录文档集——`project_docs.py --subdir <plugin>` 在插件子目录内 init/sync/audit 独立文档集（子目录自持 README/AGENTS/docs/ai 与 `.project-docs.json` 标记），根级 sync/audit 自动发现并覆盖全部子目录文档集，impact 按子目录过滤变更路径。本插件子目录自身的文档集已按此机制建立并填充真实内容。
 - **新增**：`release_artifacts.py scaffold`——仓库缺失打包文件时按检测到的技术栈生成部署脚本模板（只补缺失文件、不覆盖已有脚本、不自行发明版本，可记录用户确认的初始版本），并同时生成 Windows 一键启动/停止的 start.bat 与 stop.bat（CRLF 行尾、PID 文件幂等、可选 `HEALTH_URL` 健康检查、docker 项目走 compose），`bundle` 遇缺失脚本会自动补建并在结果中标注。
 - **新增**：带单一顶层目录、栈检测、校验和，以及 package / backup / restore / start / stop / upgrade 脚本契约的版本化 tar.gz 部署打包。
 - **新增**：与 Archify 兼容的图表工作区（typed JSON 源、校验后的 HTML、receipts 证据）。

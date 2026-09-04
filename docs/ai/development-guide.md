@@ -15,7 +15,8 @@
 当前没有可构建 / 可运行的应用。仓库级确定性校验命令：
 
 ```bash
-py ai-project-steward/scripts/project_docs.py audit --root .
+py ai-project-steward/scripts/project_docs.py audit --root .        # 根 + 已标记子目录文档集一并审计
+py ai-project-steward/scripts/project_docs.py init --root . --subdir <plugin>   # 为插件子目录建立文档集
 ```
 
 插件改动完成后，用统一同步工具把最新内容分发到本机各宿主并验证（ZCode / Claude Code 走插件市场+缓存+注册表全量更新，Codex / Kimi CLI / 共享 `~/.agents/skills` 走技能目录分发）：

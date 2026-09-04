@@ -47,6 +47,31 @@ def resolve_root(value: str) -> Path:
     return Path(output).resolve() if code == 0 and output else root
 
 
+def resolve_doc_root(root: Path, subdir: str | None) -> tuple[Path, str]:
+    """Resolve the doc-set root: the repository root itself, or one plugin subdirectory inside it."""
+    if not subdir:
+        return root, "."
+    doc_root = (root / subdir).resolve()
+    if doc_root == root:
+        raise ValueError("--subdir cannot be the repository root itself")
+    if root not in doc_root.parents:
+        raise ValueError(f"--subdir escapes the repository root: {subdir}")
+    if not doc_root.is_dir():
+        raise ValueError(f"--subdir does not exist or is not a directory: {subdir}")
+    return doc_root, doc_root.relative_to(root).as_posix()
+
+
+def discover_doc_scopes(root: Path) -> list[tuple[str, Path]]:
+    """Subdirectories that carry their own managed doc set (marked by .project-docs.json)."""
+    scopes = []
+    for item in sorted(root.iterdir(), key=lambda p: p.name.lower()):
+        if not item.is_dir() or item.name.startswith(".") or item.name in IGNORED_PARTS:
+            continue
+        if (item / ".project-docs.json").is_file():
+            scopes.append((item.relative_to(root).as_posix(), item))
+    return scopes
+
+
 def write_missing(path: Path, content: str) -> bool:
     if path.exists() and path.stat().st_size > 0:
         return False
@@ -316,8 +341,14 @@ def classify(path: str) -> str:
     return "other"
 
 
-def impact(root: Path, base: str | None) -> dict:
+def impact(root: Path, base: str | None, doc_root: Path | None = None) -> dict:
+    scope_root = doc_root or root
+    prefix = ""
+    if scope_root != root:
+        prefix = scope_root.relative_to(root).as_posix() + "/"
     files = [p for p in changed_files(root, base) if not is_ignored(p)]
+    if prefix:
+        files = [p[len(prefix):] for p in files if p.startswith(prefix)]
     docs = [p for p in files if Path(p).suffix.lower() in DOC_EXTENSIONS or p == "AGENTS.md" or p.startswith("docs/")]
     code = [p for p in files if p not in docs and (Path(p).suffix.lower() in CODE_EXTENSIONS or Path(p).name in HIGH_IMPACT_NAMES)]
     areas: dict[str, list[str]] = {}
@@ -326,6 +357,7 @@ def impact(root: Path, base: str | None) -> dict:
     needs_review = bool(code)
     return {
         "root": str(root),
+        "scope": prefix.rstrip("/") or ".",
         "changed": files,
         "code_or_config": code,
         "documentation": docs,
@@ -355,58 +387,103 @@ def plausible_repo_path(value: str) -> bool:
     return "/" in value or Path(value).suffix != ""
 
 
-def audit(root: Path) -> dict:
+def audit_scope(doc_root: Path, scope: str) -> dict:
     issues = []
-    required = [root / "README.md", root / "CHANGELOG.md", root / "AGENTS.md", root / "docs/ai/project-overview.md", root / "docs/ai/module-map.md", root / "docs/ai/verification.md"]
+    documents = [str(p.relative_to(doc_root)) for p in iter_markdown(doc_root)]
+    required = [doc_root / "README.md", doc_root / "CHANGELOG.md", doc_root / "AGENTS.md", doc_root / "docs/ai/project-overview.md", doc_root / "docs/ai/module-map.md", doc_root / "docs/ai/verification.md"]
     for path in required:
         if not path.exists():
-            issues.append({"type": "missing-document", "source": str(path.relative_to(root)), "value": ""})
-    readme = root / "README.md"
+            issues.append({"type": "missing-document", "scope": scope, "source": str(path.relative_to(doc_root)), "value": ""})
+    readme = doc_root / "README.md"
     if readme.exists():
         readme_text = readme.read_text(encoding="utf-8", errors="replace")
         if "docs/ai/" not in readme_text:
-            issues.append({"type": "missing-project-doc-link", "source": "README.md", "value": "docs/ai/"})
+            issues.append({"type": "missing-project-doc-link", "scope": scope, "source": "README.md", "value": "docs/ai/"})
         if "AGENTS.md" not in readme_text:
-            issues.append({"type": "missing-agent-instructions-link", "source": "README.md", "value": "AGENTS.md"})
+            issues.append({"type": "missing-agent-instructions-link", "scope": scope, "source": "README.md", "value": "AGENTS.md"})
         if "CHANGELOG.md" not in readme_text:
-            issues.append({"type": "missing-changelog-link", "source": "README.md", "value": "CHANGELOG.md"})
-    for doc in iter_markdown(root):
+            issues.append({"type": "missing-changelog-link", "scope": scope, "source": "README.md", "value": "CHANGELOG.md"})
+    for doc in iter_markdown(doc_root):
         text = doc.read_text(encoding="utf-8", errors="replace")
         for value in PATH_PATTERN.findall(text):
             clean = value.strip().rstrip(".,:;")
             if not plausible_repo_path(clean) or "*" in clean or clean.startswith("docs/ai/modules/<"):
                 continue
-            target = root / clean
+            target = doc_root / clean
             if not target.exists():
-                issues.append({"type": "missing-path", "source": str(doc.relative_to(root)), "value": clean})
-    return {"root": str(root), "documents": [str(p.relative_to(root)) for p in iter_markdown(root)], "issues": issues}
+                issues.append({"type": "missing-path", "scope": scope, "source": str(doc.relative_to(doc_root)), "value": clean})
+    return {"scope": scope, "root": str(doc_root), "documents": documents, "issues": issues}
 
 
-def sync_docs(root: Path, base: str | None) -> dict:
+def combine_scopes(root: Path, scopes: list[dict]) -> dict:
+    issues = [issue for result in scopes for issue in result["issues"]]
+    documents = []
+    for result in scopes:
+        prefix = "" if result["scope"] == "." else result["scope"] + "/"
+        documents += [prefix + doc for doc in result["documents"]]
+    return {"root": str(root), "scopes": [result["scope"] for result in scopes], "documents": documents, "issues": issues}
+
+
+def audit(root: Path, subdir: str | None = None) -> dict:
+    doc_root, scope = resolve_doc_root(root, subdir)
+    if subdir:
+        return audit_scope(doc_root, scope)
+    return combine_scopes(root, [audit_scope(root, ".")] + [audit_scope(path, name) for name, path in discover_doc_scopes(root)])
+
+
+def sync_docs(root: Path, base: str | None, subdir: str | None = None) -> dict:
+    doc_root, scope = resolve_doc_root(root, subdir)
+    if subdir:
+        baseline = init_docs(doc_root)
+        change_impact = impact(root, base, doc_root)
+        consistency = audit(root, subdir)
+        return {
+            "root": str(root),
+            "scope": scope,
+            "created_missing": baseline["created"],
+            "preserved": baseline["preserved"],
+            "impact": change_impact,
+            "audit": consistency,
+            "needs_semantic_review": bool(
+                baseline["created"]
+                or change_impact["needs_semantic_review"]
+                or consistency["issues"]
+            ),
+        }
     baseline = init_docs(root)
+    created = list(baseline["created"])
+    for name, path in discover_doc_scopes(root):
+        sub_baseline = init_docs(path)
+        created += [f"{name}/{c}" for c in sub_baseline["created"]]
     change_impact = impact(root, base)
-    consistency = audit(root)
+    consistency = combine_scopes(root, [audit_scope(root, ".")] + [audit_scope(path, name) for name, path in discover_doc_scopes(root)])
     return {
         "root": str(root),
-        "created_missing": baseline["created"],
+        "scope": ".",
+        "created_missing": created,
         "preserved": baseline["preserved"],
         "impact": change_impact,
         "audit": consistency,
         "needs_semantic_review": bool(
-            baseline["created"]
+            created
             or change_impact["needs_semantic_review"]
             or consistency["issues"]
         ),
     }
 
 
+def scope_line(result: dict) -> list[str]:
+    scope = result.get("scope")
+    return [f"Scope: {scope}"] if scope and scope != "." else []
+
+
 def as_markdown(mode: str, result: dict) -> str:
     if mode == "init":
-        lines = ["# Project documentation initialized", "", f"Created: {len(result['created'])}", f"Preserved: {result['preserved']}"]
+        lines = ["# Project documentation initialized", *scope_line(result), "", f"Created: {len(result['created'])}", f"Preserved: {result['preserved']}"]
         lines += ["", "## Created files", ""] + ([f"- `{p}`" for p in result["created"]] or ["- None"])
         return "\n".join(lines)
     if mode == "impact":
-        lines = ["# Documentation impact", "", f"Semantic review required: {'yes' if result['needs_semantic_review'] else 'no'}", f"Documentation changed: {'yes' if result['docs_changed'] else 'no'}"]
+        lines = ["# Documentation impact", *scope_line(result), "", f"Semantic review required: {'yes' if result['needs_semantic_review'] else 'no'}", f"Documentation changed: {'yes' if result['docs_changed'] else 'no'}"]
         for area, paths in result["areas"].items():
             lines += ["", f"## {area}", ""] + [f"- `{p}`" for p in paths]
         if not result["areas"]:
@@ -415,6 +492,7 @@ def as_markdown(mode: str, result: dict) -> str:
     if mode == "sync":
         lines = [
             "# Project documentation synchronized",
+            *scope_line(result),
             "",
             f"Created missing files: {len(result['created_missing'])}",
             f"Semantic review required: {'yes' if result['needs_semantic_review'] else 'no'}",
@@ -427,12 +505,14 @@ def as_markdown(mode: str, result: dict) -> str:
             [f"- `{path}`" for path in result["impact"]["code_or_config"]] or ["- None"]
         )
         lines += ["", "## Audit findings", ""] + (
-            [f"- {item['type']}: `{item['source']}` -> `{item['value']}`" for item in result["audit"]["issues"]]
+            [f"- {item['type']} [{item.get('scope', '.')}]: `{item['source']}` -> `{item['value']}`" for item in result["audit"]["issues"]]
             or ["- No deterministic issues found."]
         )
         return "\n".join(lines)
-    lines = ["# Documentation audit", "", f"Issues: {len(result['issues'])}"]
-    lines += ["", "## Findings", ""] + ([f"- {i['type']}: `{i['source']}` -> `{i['value']}`" for i in result["issues"]] or ["- No deterministic issues found."])
+    lines = ["# Documentation audit", *scope_line(result), "", f"Issues: {len(result['issues'])}"]
+    if result.get("scopes"):
+        lines += ["", f"Scopes audited: {', '.join(result['scopes'])}"]
+    lines += ["", "## Findings", ""] + ([f"- {i['type']} [{i.get('scope', '.')}]: `{i['source']}` -> `{i['value']}`" for i in result["issues"]] or ["- No deterministic issues found."])
     return "\n".join(lines)
 
 
@@ -440,18 +520,26 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=("init", "sync", "impact", "audit"))
     parser.add_argument("--root", default=os.getcwd())
+    parser.add_argument("--subdir", help="Manage the doc set of this plugin subdirectory instead of the repository root; without it, sync/audit also cover discovered subdirectory doc sets")
     parser.add_argument("--base", help="Optional Git revision/range for impact mode")
     parser.add_argument("--format", choices=("json", "markdown"), default="json")
     args = parser.parse_args()
     root = resolve_root(args.root)
-    if args.mode == "init":
-        result = init_docs(root)
-    elif args.mode == "sync":
-        result = sync_docs(root, args.base)
-    elif args.mode == "impact":
-        result = impact(root, args.base)
-    else:
-        result = audit(root)
+    try:
+        if args.mode == "init":
+            doc_root, scope = resolve_doc_root(root, args.subdir)
+            result = init_docs(doc_root)
+            result["scope"] = scope
+        elif args.mode == "sync":
+            result = sync_docs(root, args.base, args.subdir)
+        elif args.mode == "impact":
+            doc_root, _ = resolve_doc_root(root, args.subdir)
+            result = impact(root, args.base, doc_root if args.subdir else None)
+        else:
+            result = audit(root, args.subdir)
+    except ValueError as exc:
+        print(json.dumps({"root": str(root), "error": str(exc)}, ensure_ascii=False, indent=2))
+        return 2
     print(json.dumps(result, ensure_ascii=False, indent=2) if args.format == "json" else as_markdown(args.mode, result))
     return 0
 

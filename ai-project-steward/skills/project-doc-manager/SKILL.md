@@ -13,12 +13,12 @@ Keep repository documentation concise, current, and useful to coding agents. Tre
 - **Synchronize**: first supplement missing baseline documents, then inspect code changes and update existing authoritative content when needed.
 - **Audit**: compare existing documentation with code, commands, paths, interfaces, and module relationships. Report discrepancies before broad rewrites.
 
-Use `python3 "$PLUGIN_ROOT/scripts/project_docs.py" <mode>` when `PLUGIN_ROOT` is available. Otherwise locate this skill's plugin root and run the same script. Supported modes are `init`, `sync`, `impact`, and `audit`.
+Use `python3 "$PLUGIN_ROOT/scripts/project_docs.py" <mode>` when `PLUGIN_ROOT` is available. Otherwise locate this skill's plugin root and run the same script. Supported modes are `init`, `sync`, `impact`, and `audit`. In a plugin-collection repository (one plugin per subdirectory), pass `--subdir <plugin>` to manage that subdirectory's own doc set; without it, `sync` and `audit` also cover every subdirectory doc set marked by a `.project-docs.json` file.
 
 ## Initialize
 
 1. Inspect the repository root, existing instructions, manifests, build files, README files, and top-level modules.
-2. Run `project_docs.py init --root <repo>` to create only missing files, including root `README.md`, `CHANGELOG.md`, and the Archify workspace. Never overwrite a non-empty existing file without reviewing it.
+2. Run `project_docs.py init --root <repo>` to create only missing files, including root `README.md`, `CHANGELOG.md`, and the Archify workspace. For a plugin subdirectory in a collection repository, run `project_docs.py init --root <repo> --subdir <plugin>` instead — the doc set lands inside the subdirectory (subdir README, AGENTS.md, `docs/ai/`, `.project-docs.json` marker) and never touches the repository root. Never overwrite a non-empty existing file without reviewing it.
 3. Make `README.md` the concise human-facing landing page: purpose, verified quick start, project structure, documentation links, and contributor entry. If an existing README lacks links to `docs/ai/` or `AGENTS.md`, add only the missing navigation without replacing useful content.
 4. Replace generated prompts with verified facts. Mark genuinely unknown business facts as `待确认`; do not invent them.
 5. Keep `AGENTS.md` short: repository rules, commands, constraints, definition of done, and links to detailed documents.
@@ -29,7 +29,7 @@ Read [document-model.md](references/document-model.md) when initializing or reor
 
 ## Synchronize after code changes
 
-1. Run `project_docs.py sync --root <repo> --format markdown`. Synchronization always checks and creates missing baseline files before analyzing the diff.
+1. Run `project_docs.py sync --root <repo> --format markdown`. Synchronization always checks and creates missing baseline files before analyzing the diff. In a collection repository it also tops up every discovered subdirectory doc set; use `--subdir <plugin>` to focus one scope (impact is then filtered to that subdirectory's paths).
 2. Populate newly created README, `CHANGELOG.md`, `AGENTS.md`, and `docs/ai/` files with repository-supported facts. Do not leave generated `待确认` prompts when the answer is available from code or existing documentation; do not invent historical releases.
 3. Resolve audit findings. For an existing README, supplement missing navigation or current information without replacing useful content.
 4. Inspect the actual diff for each reported area. A changed path is a prompt for semantic review, not proof that documentation must change.
@@ -48,7 +48,7 @@ Never change documentation merely to silence the guard. If code and documented b
 
 ## Audit
 
-1. Run `project_docs.py audit --root <repo> --format markdown` for deterministic checks, including root README and changelog presence and navigation to `docs/ai/`, `CHANGELOG.md`, and `AGENTS.md`.
+1. Run `project_docs.py audit --root <repo> --format markdown` for deterministic checks, including root README and changelog presence and navigation to `docs/ai/`, `CHANGELOG.md`, and `AGENTS.md`. In a collection repository the audit covers the root scope plus every discovered subdirectory doc set, and each finding is labeled with its scope; use `--subdir <plugin>` for a focused audit.
 2. Inspect semantic consistency that scripts cannot prove: business rules, module boundaries, interface behavior, and verification claims.
 3. Present the discrepancy list before making broad or ambiguous corrections. Safe factual corrections explicitly requested by the user may be applied directly.
 4. Re-run the audit after edits.

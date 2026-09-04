@@ -23,6 +23,10 @@ docs/ai/
 └── modules/
 ```
 
+## Collection repositories
+
+In a plugin-collection repository (one plugin per subdirectory), each plugin subdirectory can carry its own doc set with the same layout, rooted at the subdirectory and marked by a `.project-docs.json` file. Paths inside a subdirectory doc set resolve against that subdirectory, and repository-level tooling outside the plugin should be referenced as plain text rather than as repo-root paths, so audits stay valid inside every subdirectory scope. `sync` and `audit` run at the repository root cover the root set plus every discovered subdirectory set.
+
 ## Ownership
 
 | Information | Authoritative location |
