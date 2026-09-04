@@ -1,6 +1,6 @@
 ---
 name: project-packager
-description: Build project releases and generate deployable tar.gz packages with one top-level version directory plus package, backup, restore, start, stop, and upgrade shell scripts. Use when implementation must end with a downloadable, installable, upgradeable, or rollback-capable release.
+description: 构建项目发布版本，产出带单一顶层版本目录以及 package/backup/restore/start/stop/upgrade 脚本契约的可部署 tar.gz 包。当实现必须以可下载、可安装、可升级或可回滚的发布产物收尾时使用。Build project releases and generate deployable tar.gz packages with one top-level version directory plus package, backup, restore, start, stop, and upgrade shell scripts. Use when implementation must end with a downloadable, installable, upgradeable, or rollback-capable release.
 ---
 
 # Project Packager

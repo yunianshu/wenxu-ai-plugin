@@ -1,6 +1,6 @@
 ---
 name: project-doc-manager
-description: Initialize, update, or audit AI-readable repository documentation, including AGENTS.md, module maps, business rules, verification guidance, diagram indexes, and documentation impact after code changes. Use when setting up project context for coding agents or keeping project documentation synchronized with code.
+description: 初始化、更新或审计 AI 可读的仓库文档（含 AGENTS.md、模块地图、业务规则、验证指引、图表索引，以及代码变更后的文档影响评估）。用于为编码代理搭建项目上下文，或让项目文档与代码保持同步。Initialize, update, or audit AI-readable repository documentation, including AGENTS.md, module maps, business rules, verification guidance, diagram indexes, and documentation impact after code changes. Use when setting up project context for coding agents or keeping project documentation synchronized with code.
 ---
 
 # Project Doc Manager

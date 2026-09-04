@@ -2,14 +2,18 @@
   "name": "ai-project-steward",
   "version": "0.1.0+codex.20260902010652",
   "description": "Steward project knowledge, Archify diagrams, parallel delivery, and verified release artifacts.",
+  "descriptionZh": "统辖项目知识、Archify 图表、并行交付与经校验的发布产物。",
   "author": {
     "name": "Wenxu"
   },
   "skills": "./skills/",
   "interface": {
     "displayName": "AI Project Steward",
+    "displayNameZh": "AI 项目管家",
     "shortDescription": "Steward docs, diagrams, branches, and release packages.",
+    "shortDescriptionZh": "统辖文档、图表、分支与发布包。",
     "longDescription": "Maintain AI-readable documentation, generate validated Archify diagrams, coordinate isolated Git worktrees, and produce checksummed release artifacts.",
+    "longDescriptionZh": "维护 AI 可读文档，生成经校验的 Archify 图表，协调隔离的 Git worktree，并产出带校验和的发布产物。",
     "developerName": "Wenxu",
     "category": "Productivity",
     "capabilities": [

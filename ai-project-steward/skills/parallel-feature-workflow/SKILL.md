@@ -1,6 +1,6 @@
 ---
 name: parallel-feature-workflow
-description: Split a feature into independent subtasks, create isolated Git worktree branches, coordinate parallel implementation, verify each branch, and merge completed work into the target branch in dependency order. Use when the user wants multiple branches or agents to implement parts of a feature concurrently.
+description: 将功能拆分为相互独立的子任务，创建隔离的 Git worktree 分支，协调并行实现，逐个校验分支，并按依赖顺序把完成的工作合并到目标分支。当希望用多个分支或代理并发实现某个功能的不同部分时使用。Split a feature into independent subtasks, create isolated Git worktree branches, coordinate parallel implementation, verify each branch, and merge completed work into the target branch in dependency order. Use when the user wants multiple branches or agents to implement parts of a feature concurrently.
 ---
 
 # Parallel Feature Workflow

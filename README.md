@@ -25,6 +25,7 @@ AI 编程助手插件管理项目：集中托管、组织面向 AI 编程助手�
 
 ## 项目文档
 
+- [插件 ai-project-steward 中文说明](docs/ai/modules/ai-project-steward.md)
 - [项目概述](docs/ai/project-overview.md)
 - [模块/插件地图](docs/ai/module-map.md)
 - [业务规则](docs/ai/business-rules.md)

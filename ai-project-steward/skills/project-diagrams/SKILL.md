@@ -1,6 +1,6 @@
 ---
 name: project-diagrams
-description: Generate, supplement, adjust, validate, or audit architecture, workflow, sequence, data-flow, and lifecycle diagrams from repository evidence using tt-a1i/archify typed JSON and self-contained HTML.
+description: 依据仓库证据，用 tt-a1i/archify 的类型化 JSON 与自包含 HTML，生成、补充、调整、校验或审计架构图、流程图、时序图、数据流图与生命周期图。Generate, supplement, adjust, validate, or audit architecture, workflow, sequence, data-flow, and lifecycle diagrams from repository evidence using tt-a1i/archify typed JSON and self-contained HTML.
 ---
 
 # Project Diagrams
