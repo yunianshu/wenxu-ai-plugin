@@ -1,0 +1,5 @@
+interface:
+  display_name: "Parallel Feature Workflow"
+  short_description: "Build features in isolated branches and merge safely"
+  default_prompt: "Use $parallel-feature-workflow to split this feature across isolated Git worktrees and integrate the verified branches."
+

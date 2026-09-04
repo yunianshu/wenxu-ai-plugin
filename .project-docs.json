@@ -1,0 +1,5 @@
+{
+  "docs": ["AGENTS.md", "docs/ai/**"],
+  "ignore": ["build/**", "dist/**", "coverage/**", "node_modules/**", "target/**"],
+  "mappings": []
+}

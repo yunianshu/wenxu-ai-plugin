@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Packager"
+  short_description: "Build and verify release artifacts"
+  default_prompt: "Use $project-packager to build, collect, checksum, audit, and return this project's release artifacts."

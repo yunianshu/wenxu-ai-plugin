@@ -1,0 +1,26 @@
+{
+  "name": "ai-project-steward",
+  "version": "0.1.0+codex.20260902010652",
+  "description": "Steward project knowledge, Archify diagrams, parallel delivery, and verified release artifacts.",
+  "author": {
+    "name": "Wenxu"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "AI Project Steward",
+    "shortDescription": "Steward docs, diagrams, branches, and release packages.",
+    "longDescription": "Maintain AI-readable documentation, generate validated Archify diagrams, coordinate isolated Git worktrees, and produce checksummed release artifacts.",
+    "developerName": "Wenxu",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Initialize project documentation and diagrams for this repository.",
+      "Generate or update the architecture and business flow diagrams.",
+      "Split this feature into parallel worktree branches and merge verified results.",
+      "Build and return the verified release package for this project."
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "description": "Check documentation impact once before a coding turn finishes.",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/scripts/doc_guard.py\"",
+            "timeout": 15,
+            "statusMessage": "Checking project documentation impact"
+          }
+        ]
+      }
+    ]
+  }
+}

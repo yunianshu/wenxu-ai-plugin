@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Diagrams"
+  short_description: "Generate and evolve architecture and flow diagrams"
+  default_prompt: "Use $project-diagrams to generate or update validated Archify JSON and self-contained HTML diagrams from this repository."

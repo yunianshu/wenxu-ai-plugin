@@ -1,0 +1,5 @@
+interface:
+  display_name: "Project Doc Manager"
+  short_description: "Keep AI project context synchronized with code"
+  default_prompt: "Use $project-doc-manager to check and synchronize this repository's project documentation."
+
