@@ -12,11 +12,21 @@
 
 ## 构建与运行
 
-当前没有可构建 / 可运行的应用，没有已验证的构建命令。仓库级确定性校验示例（文档完整性检查）：
+当前没有可构建 / 可运行的应用。仓库级确定性校验命令：
 
 ```bash
 py ai-project-steward/scripts/project_docs.py audit --root .
 ```
+
+插件改动完成后，用统一同步工具把最新内容分发到本机各宿主并验证（ZCode / Claude Code 走插件市场+缓存+注册表全量更新，Codex / Kimi CLI / 共享 `~/.agents/skills` 走技能目录分发）：
+
+```bash
+py tools/sync-plugin.py --check   # 只读校验五宿主是否与仓库一致
+py tools/sync-plugin.py           # 同步（内容变化时自动升 ZCode 构建戳与 Claude 版本号）并复验
+py tools/sync-plugin.py --only claude,codex   # 仅指定宿主
+```
+
+同步工具会改写仓库内 `ai-project-steward/.codex-plugin/plugin.json` 的构建戳（内容有变化时），记得随插件改动一起提交。每次同步前各宿主的注册表/清单会自动备份到对应插件目录下的 backup-sync-宿主-时间戳 备份目录。
 
 插件脚本的完整用法以 `ai-project-steward/` 内部各 skill 的 SKILL.md 为准。
 

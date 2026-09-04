@@ -8,6 +8,7 @@
 
 ## 其他顶层目录
 
+- `tools/` — 仓库级运维工具：`tools/sync-plugin.py` 把 `ai-project-steward/` 的最新内容统一同步到本机各 AI CLI 宿主（ZCode、Claude Code、Codex、Kimi CLI、共享的 `~/.agents/skills` 技能目录）并逐宿主校验，用法见开发指南。
 - `.spec-workflow/` — spec-workflow 的规格/决策/审批存放区，非托管插件。
 - `docs/ai/` — 本仓库的 AI 可读文档。
 
