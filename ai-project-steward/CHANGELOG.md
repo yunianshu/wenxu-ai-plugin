@@ -6,6 +6,7 @@ All notable changes to AI Project Steward are documented here.
 
 ### Added
 
+- `release_artifacts.py scaffold`: generates stack-aware deployment script templates (package/backup/restore/start/stop/upgrade) for exactly the missing files when a repository has no packaging files, records a user-confirmed initial version into `VERSION`, and reports remaining `TODO(project)` markers. `bundle` now scaffolds missing scripts automatically and flags them in its result.
 - Versioned tar.gz deployment packaging with a single top-level directory, stack detection, checksums, and package/backup/restore/start/stop/upgrade script contracts.
 - Archify-compatible diagram workspaces with typed JSON sources, validated HTML outputs, and receipts.
 - Root `CHANGELOG.md` creation and synchronization for managed projects.

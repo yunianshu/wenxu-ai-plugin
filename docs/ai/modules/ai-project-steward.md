@@ -43,7 +43,7 @@
 | project_docs.py | 初始化并校验 AI 可读仓库文档（模式：init / sync / impact / audit）。 |
 | diagram_docs.py | 在项目内管理 Archify 图表工作区。 |
 | doc_guard.py | 一次性 Stop 钩子，让收尾前把文档影响纳入考量。 |
-| release_artifacts.py | 探测、收集并审计项目的发布产物。 |
+| release_artifacts.py | 探测、收集并审计项目的发布产物；`scaffold` 可在仓库缺失打包文件时按检测到的技术栈生成部署脚本模板（不覆盖已有文件、不自行发明版本），`bundle` 遇缺失脚本会自动补建并在结果中标注。 |
 | worktree_flow.py | 并行特性分支场景下的 Git worktree 安全辅助。 |
 
 ## 使用入门
@@ -56,6 +56,7 @@ py ai-project-steward/scripts/project_docs.py audit --root .
 
 ## 变更摘要（插件 CHANGELOG：Unreleased）
 
+- **新增**：`release_artifacts.py scaffold`——仓库缺失打包文件时按检测到的技术栈生成部署脚本模板（只补缺失文件、不覆盖已有脚本、不自行发明版本，可记录用户确认的初始版本），`bundle` 遇缺失脚本会自动补建并在结果中标注。
 - **新增**：带单一顶层目录、栈检测、校验和，以及 package / backup / restore / start / stop / upgrade 脚本契约的版本化 tar.gz 部署打包。
 - **新增**：与 Archify 兼容的图表工作区（typed JSON 源、校验后的 HTML、receipts 证据）。
 - **新增**：为被管项目创建并同步根 `CHANGELOG.md`；同步时补全缺失的基线文档。
