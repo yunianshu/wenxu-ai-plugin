@@ -21,3 +21,4 @@ All notable changes to AI Project Steward are documented here.
 ### Fixed
 
 - ZCode hook startup now uses the cross-compatible `CLAUDE_PLUGIN_ROOT` path variable instead of Codex-only `PLUGIN_ROOT`, with a native ZCode plugin manifest included.
+- The `doc_guard.py` Stop hook no longer crashes with exit code 1 when a host feeds it a literal `null` or non-object hook payload; it now passes through with `continue`. Hook JSON output is ASCII-escaped so non-ASCII block reasons survive Windows pipe encoding.

@@ -20,7 +20,9 @@ ACKNOWLEDGEMENTS = (
 
 
 def output(value: dict) -> int:
-    print(json.dumps(value, ensure_ascii=False))
+    # ASCII-escape the JSON so non-ASCII reason text survives any host stdout
+    # encoding (Windows pipes can otherwise serialize it as cp936 mojibake).
+    print(json.dumps(value, ensure_ascii=True))
     return 0
 
 
@@ -30,7 +32,10 @@ def main() -> int:
     except Exception:
         return output({"continue": True})
 
-    if payload.get("stop_hook_active"):
+    # Hosts (Claude Code / Codex) may feed a literal null or non-object payload on
+    # some events. There is nothing to read then, so pass through instead of letting
+    # AttributeError fail the hook with exit code 1.
+    if not isinstance(payload, dict) or payload.get("stop_hook_active"):
         return output({"continue": True})
 
     cwd = Path(payload.get("cwd") or os.getcwd()).resolve()
