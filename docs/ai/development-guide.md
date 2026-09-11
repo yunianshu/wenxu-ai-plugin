@@ -1,36 +1,30 @@
 # 开发指南
 
-## 技术现状
+仓库托管 Python 标准库脚本、Markdown Skills 与宿主插件清单。无应用构建链。先读相关 AGENTS 与实际脚本，工具命令以 --help 和本次验证为准。
 
-仓库本身无应用代码、无构建链。`ai-project-steward/` 内为 Python 3 脚本与 Markdown skills；插件通过 `ai-project-steward/.codex-plugin/plugin.json`、`ai-project-steward/.zcode-plugin/plugin.json` 声明给宿主环境加载。
+## 开发与验证
 
-## 前置条件
+- Python 3 与 Git；Windows 可用 py -3，跨平台可用 python3。启动钩子显式选择 UTF-8，不按历史记录假定某个解释器仍损坏。
+- 在仓库根运行 python3 -X utf8 -B -m unittest discover -s ai-project-steward/tests -v，验证钩子行为。
+- 文档检查：python3 -X utf8 ai-project-steward/scripts/project_docs.py audit --root .；这是路径/结构检查，不代替语义审查。
 
-- git：版本管理。
-- Python 3：仅在运行 `ai-project-steward/` 内脚本时需要（如 `ai-project-steward/scripts/project_docs.py`、`ai-project-steward/scripts/diagram_docs.py`）。
-- 本开发机备注：默认 `python`（`D:\soft\py`，3.13）存在无法加载标准库的环境问题，请用 `py` 启动器（3.14）。
+## 本地分发
 
-## 构建与运行
+仓库工具 tools/sync-plugin.py 支持 --only 指定宿主、--check 只读校验。更新已安装 Codex 插件使用：
 
-当前没有可构建 / 可运行的应用。仓库级确定性校验命令：
-
-```bash
-py ai-project-steward/scripts/project_docs.py audit --root .        # 根 + 已标记子目录文档集一并审计
-py ai-project-steward/scripts/project_docs.py init --root . --subdir <plugin>   # 为插件子目录建立文档集
+```powershell
+python3 -X utf8 "tools/sync-plugin.py" --only codex
+python3 -X utf8 "tools/sync-plugin.py" --check --only codex
 ```
 
-插件改动完成后，用统一同步工具把最新内容分发到本机各宿主并验证（ZCode / Claude Code 走插件市场+缓存+注册表全量更新，Codex / Kimi CLI / 共享 `~/.agents/skills` 走技能目录分发）：
+Codex 分发从 CLI 获取 ai-project-steward@personal 的实际本地源路径，复制完整插件后通过 codex plugin add 更新缓存，核对源、安装版本与缓存内容。同一已安装版本内容变化时调用官方 plugin-creator 缓存戳 helper。不要仅复制 Skills 后声称钩子已更新。
 
-```bash
-py tools/sync-plugin.py --check   # 只读校验五宿主是否与仓库一致
-py tools/sync-plugin.py           # 同步（内容变化时自动升 ZCode 构建戳与 Claude 版本号）并复验
-py tools/sync-plugin.py --only claude,codex   # 仅指定宿主
-```
+本工具不手改 Codex 市场或 trusted_hash。钩子定义变化后，宿主可能要求 /hooks 审阅并信任；重新打开会话验证实际加载。同步本身不授权 Git 提交/推送。
 
-同步工具会改写仓库内 `ai-project-steward/.codex-plugin/plugin.json` 的构建戳（内容有变化时），记得随插件改动一起提交。每次同步前各宿主的注册表/清单会自动备份到对应插件目录下的 backup-sync-宿主-时间戳 备份目录。
+ZCode / Claude 使用各自既有市场、缓存和注册表分发；Kimi / agents 复制 Skills。未指定 --only 会尝试全部宿主，仅在确实要求跨宿主同步时使用。复制保留额外文件并由校验报告，不递归删除安装目标。
 
-插件脚本的完整用法以 `ai-project-steward/` 内部各 skill 的 SKILL.md 为准。
+## Skills 来源
 
-## 环境与配置
+本地 loose Skills 与插件内同名 Skills 可能同时被发现。在 Codex 中可使用 skills.config 按具体 SKILL.md 路径禁用重复拷贝，保留插件能力；不必删除其他宿主使用的文件。改动后复核有效目录，不对官方缓存做手工覆盖。
 
-无环境变量或运行配置文件要求。平台清单与版本见 `ai-project-steward/.codex-plugin/plugin.json`、`ai-project-steward/.zcode-plugin/plugin.json` 与 `ai-project-steward/CHANGELOG.md`。
+插件源码内不得包含本机备份、密钥或运行时缓存。变更以源码为准，经分发进入宿主；项目文档与插件文档分别维护其所属范围。

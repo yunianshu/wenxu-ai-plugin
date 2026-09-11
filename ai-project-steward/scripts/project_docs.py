@@ -34,6 +34,9 @@ def run_git(root: Path, *args: str) -> tuple[int, str]:
     proc = subprocess.run(
         ["git", "-C", str(root), *args],
         text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=5,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=False,

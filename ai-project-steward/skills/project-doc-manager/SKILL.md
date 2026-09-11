@@ -1,58 +1,31 @@
 ---
 name: project-doc-manager
-description: 初始化、更新或审计 AI 可读的仓库文档（含 AGENTS.md、模块地图、业务规则、验证指引、图表索引，以及代码变更后的文档影响评估）。用于为编码代理搭建项目上下文，或让项目文档与代码保持同步。Initialize, update, or audit AI-readable repository documentation, including AGENTS.md, module maps, business rules, verification guidance, diagram indexes, and documentation impact after code changes. Use when setting up project context for coding agents or keeping project documentation synchronized with code.
+description: 根据仓库证据初始化、更新或审计 AI 可读项目文档。用于用户要求建立项目上下文或文档同步，或代码变更确实影响长期规则、接口与命令时；不为普通修复自动补建整套文档。
 ---
 
-# Project Doc Manager
+# 项目文档维护
 
-Keep repository documentation concise, current, and useful to coding agents. Treat Git as change history; project documents describe the current valid state.
+文档描述当前有效事实，Git 保存历史。只维护当前任务相关的唯一权威位置，不重复录入源码中已经清楚的细节。
 
-## Choose the mode
+## 选择模式与范围
 
-- **Initialize**: create the documentation skeleton, then replace inferred placeholders with facts supported by repository evidence.
-- **Synchronize**: first supplement missing baseline documents, then inspect code changes and update existing authoritative content when needed.
-- **Audit**: compare existing documentation with code, commands, paths, interfaces, and module relationships. Report discrepancies before broad rewrites.
+- 初始化：用户要求建立文档体系时，检查现有结构后按需要运行 init；填入已核实事实，不为凑目录生成无价值文件。
+- 同步：先看任务 diff 和相关文档，必要时用 impact 做只读辅助。仅当要求修复文档基线缺失时使用 sync；该命令会补建基线，不属于普通只读检查。
+- 审计：用 audit 检查路径和缺失项，再核对实际实现。报告差异；用户同时要求优化/修复时，直接处理证据充分的事实错误，不再要求批准同一批工作。
+- 多插件集合仓库用 --subdir 聚焦当前插件；只有用户要求全仓审计时才遍历所有文档集。
 
-Use `python3 "$PLUGIN_ROOT/scripts/project_docs.py" <mode>` when `PLUGIN_ROOT` is available. Otherwise locate this skill's plugin root and run the same script. Supported modes are `init`, `sync`, `impact`, and `audit`. In a plugin-collection repository (one plugin per subdirectory), pass `--subdir <plugin>` to manage that subdirectory's own doc set; without it, `sync` and `audit` also cover every subdirectory doc set marked by a `.project-docs.json` file.
+脚本在插件 scripts/project_docs.py。优先使用宿主的 PLUGIN_ROOT/CLAUDE_PLUGIN_ROOT；独立安装技能时先定位同源插件脚本，找不到辅助脚本可直接按证据维护文档，不把“缺 helper”当作无法修改文本。
 
-## Initialize
+## 改动影响
 
-1. Inspect the repository root, existing instructions, manifests, build files, README files, and top-level modules.
-2. Run `project_docs.py init --root <repo>` to create only missing files, including root `README.md`, `CHANGELOG.md`, and the Archify workspace. For a plugin subdirectory in a collection repository, run `project_docs.py init --root <repo> --subdir <plugin>` instead — the doc set lands inside the subdirectory (subdir README, AGENTS.md, `docs/ai/`, `.project-docs.json` marker) and never touches the repository root. Never overwrite a non-empty existing file without reviewing it.
-3. Make `README.md` the concise human-facing landing page: purpose, verified quick start, project structure, documentation links, and contributor entry. If an existing README lacks links to `docs/ai/` or `AGENTS.md`, add only the missing navigation without replacing useful content.
-4. Replace generated prompts with verified facts. Mark genuinely unknown business facts as `待确认`; do not invent them.
-5. Keep `AGENTS.md` short: repository rules, commands, constraints, definition of done, and links to detailed documents.
-6. Add module rows only for meaningful modules. Record responsibilities, code locations, entry points, dependencies, and authoritative module documents.
-7. Invoke `$project-diagrams` to initialize and generate only the architecture or flow diagrams that materially improve project understanding.
+业务规则、公开接口、数据含义、模块边界、运行/测试命令、兼容约束变化时更新相关文档。格式化、纯展示、等价重构通常无需语义更新。脚本根据文件名给出的提示仅是候选，不证明必须修改文档。
 
-Read [document-model.md](references/document-model.md) when initializing or reorganizing documentation.
+缺少 README、CHANGELOG 或图表索引不自动扩大普通代码任务范围。只有改变现有图表所表达的关系，或用户要求图表时使用 project-diagrams；只有交付范围要求发布产物时使用 project-packager。不要形成强制串联的技能流水线。
 
-## Synchronize after code changes
+区分陈旧事实与未决业务意图：已能从用户要求或权威证据确定的内容直接修正；真正影响行为的业务冲突只暂停依赖该决定的部分，并说明需要用户决定什么。
 
-1. Run `project_docs.py sync --root <repo> --format markdown`. Synchronization always checks and creates missing baseline files before analyzing the diff. In a collection repository it also tops up every discovered subdirectory doc set; use `--subdir <plugin>` to focus one scope (impact is then filtered to that subdirectory's paths).
-2. Populate newly created README, `CHANGELOG.md`, `AGENTS.md`, and `docs/ai/` files with repository-supported facts. Do not leave generated `待确认` prompts when the answer is available from code or existing documentation; do not invent historical releases.
-3. Resolve audit findings. For an existing README, supplement missing navigation or current information without replacing useful content.
-4. Inspect the actual diff for each reported area. A changed path is a prompt for semantic review, not proof that documentation must change.
-5. Update documentation when the change affects business rules, public interfaces, data structures, module boundaries, build/run/test commands, compatibility constraints, or durable operational knowledge.
-6. Usually skip semantic edits for formatting, behavior-preserving refactors, local defensive checks, generated files, and minor presentation-only changes. This exception does not permit leaving required baseline documents missing.
-7. Modify the single authoritative document in place. Remove obsolete statements and avoid duplicating the same rule elsewhere.
-8. In the completion report state either:
-   - which documents were updated and why; or
-   - `无需更新文档` with the concrete reason.
+## 完成
 
-When the task asks for a distributable, release, installation package, APK, AAB, JAR, executable, image, or source archive, invoke `$project-packager` after synchronization and verification.
+报告实际更新及验证；无需修改时用自然语言简述原因，不要求固定口令。不要为通过 Stop hook 改文档，也不要把普通文档提醒变成批准门。真实环境未验证时明确说明。
 
-When module boundaries, dependencies, actors, state transitions, or business steps change, also invoke `$project-diagrams` to assess architecture and flow diagram impact.
-
-Never change documentation merely to silence the guard. If code and documented business intent conflict, surface the conflict instead of silently declaring either side authoritative.
-
-## Audit
-
-1. Run `project_docs.py audit --root <repo> --format markdown` for deterministic checks, including root README and changelog presence and navigation to `docs/ai/`, `CHANGELOG.md`, and `AGENTS.md`. In a collection repository the audit covers the root scope plus every discovered subdirectory doc set, and each finding is labeled with its scope; use `--subdir <plugin>` for a focused audit.
-2. Inspect semantic consistency that scripts cannot prove: business rules, module boundaries, interface behavior, and verification claims.
-3. Present the discrepancy list before making broad or ambiguous corrections. Safe factual corrections explicitly requested by the user may be applied directly.
-4. Re-run the audit after edits.
-
-## Completion standard
-
-Report code changes, validation performed, documentation synchronized, and any remaining manual or real-environment verification. Do not claim real-device or production validation unless it actually ran.
+初始化或调整文档组织时再读 [document-model.md](references/document-model.md)；其布局是候选，不是每个仓库的强制完成清单。

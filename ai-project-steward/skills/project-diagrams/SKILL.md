@@ -1,9 +1,15 @@
 ---
 name: project-diagrams
-description: 依据仓库证据，用 tt-a1i/archify 的类型化 JSON 与自包含 HTML，生成、补充、调整、校验或审计架构图、流程图、时序图、数据流图与生命周期图。Generate, supplement, adjust, validate, or audit architecture, workflow, sequence, data-flow, and lifecycle diagrams from repository evidence using tt-a1i/archify typed JSON and self-contained HTML.
+description: 用户要求基于仓库生成或维护技术图表，或代码变化确实影响现有图表时，依据代码证据维护 Archify JSON、HTML 与索引。独立图表用 archify；普通代码修改不自动创建图表工作区。
 ---
 
 # Project Diagrams
+
+## 范围与执行约定
+
+用户的输出格式、验收标准与已有授权优先。只生成或更新本任务需要的图表；仅评估影响时保持只读，不运行 init/deliver。
+现有图表的事实纠错可依据代码直接完成；无法判定的业务语义只暂停相关部分，其他图表继续。不因使用本技能重新审批已授权工作。
+以下 showcase 与全套产物检查用于明确要求展示级 HTML 的交付；普通维护按实际改动验证，不把装饰警告或无关产物格式设为无限阻塞门。
 
 Follow [tt-a1i/archify](https://github.com/tt-a1i/archify): typed JSON IR is authoritative and validated self-contained HTML is the generated deliverable. Do not use Mermaid as the primary output.
 
@@ -42,7 +48,7 @@ Do not generate every type by default. Create the smallest set that materially i
 
 Preserve useful existing structure and stable node IDs where practical. Update only the affected subgraph or flow, then check all incoming and outgoing relationships. Remove obsolete nodes and edges rather than leaving historical states in the current diagram.
 
-When code and business documentation disagree, record the uncertainty in supporting documentation and ask for resolution. Never invent a service, event, transition, or dependency.
+When code and business documentation disagree, use current user intent and authoritative evidence to resolve stale facts. Ask only for unresolved business decisions that materially change the diagram. Never invent a service, event, transition, or dependency.
 
 After code changes, run `diagram_docs.py impact`. Review diagrams when module boundaries, APIs, storage, external integrations, business steps, decisions, events, or lifecycle states changed. Presentation-only code changes normally do not require diagram edits.
 

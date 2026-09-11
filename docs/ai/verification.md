@@ -1,20 +1,24 @@
 # 验证
 
-## 快速检查
+## 最小相关检查
 
-无应用代码，无自动化单元/集成测试。本仓库级别的确定性校验以「文档完整性」为主：
-
-```bash
-py ai-project-steward/scripts/project_docs.py audit --root .
+```powershell
+python3 -X utf8 -B -m unittest discover -s "ai-project-steward/tests" -v
+python3 -X utf8 "ai-project-steward/scripts/project_docs.py" audit --root .
 ```
 
-（检查 README / CHANGELOG / AGENTS / docs/ai 等基线文档存在性，以及 markdown 中引用的仓库路径是否真实存在。）
+钩子测试使用真实临时 Git 仓库和等价宿主 payload；覆盖异常输入、中文空格路径、只读性、非阻断输出、去重及子进程错误。Windows 下还执行清单中的 PowerShell、pwsh 和 cmd 启动命令。
 
-## 完整检查
+## 分发校验
 
-无发布 / 全仓构建检查。托管插件自身的发布与验收流程遵循 `ai-project-steward/` 内部定义（见其 `ai-project-steward/skills/project-packager/` 等）。
+```powershell
+python3 -X utf8 "tools/sync-plugin.py" --check --only codex
+```
 
-## 手工或真实环境检查
+Codex 检查完整插件源、安装版本与对应缓存，而非仅检查 Skills。其他宿主使用 --only 单独指定，未运行的检查不得标记通过。
 
-- 文档人工审阅：确认 `README.md`、`AGENTS.md`、`docs/ai/` 内容与仓库实际状态一致。
-- 未来新增插件时：在对应宿主环境（Codex / Zcode / Claude 等）中实际加载并验证清单与技能入口。
+## 验证边界
+
+Python 测试与缓存一致不等于已完成宿主交互测试。定义变化后应在新会话确认钩子加载；新信任审批需用户在宿主中完成，自动化不能写入 trusted_hash 代替。
+
+文档审计是结构与引用检查，不要求为了通过审计扩展普通任务范围。服务部署脚本仅在相关发布任务中验证，本次钩子/指令修改不要求构建无关应用或在生产环境演练恢复。

@@ -1,28 +1,11 @@
-# Worktree branch workflow
+# 分支集成参考
 
-## Planning table
+任务表按需要记录：分支、职责、允许路径、依赖、验收、文档影响。不要给紧耦合改动制造假独立边界。
 
-Prepare one row per subtask:
+合并条件：源分支工作已提交，受影响检查通过，依赖已就绪，集成工作区干净且没有未完成 Git 操作。文档影响只需在实际变化处处理，不强制创建新文档。
 
-| Order | Branch | Responsibility | Allowed paths | Depends on | Verification | Documentation |
-| --- | --- | --- | --- | --- | --- | --- |
+冲突是需要分析的实现工作，不自动构成权限阻塞。根据用户目标与双方代码保留正确行为，自行解决已授权的常规冲突并复验；无法确定业务含义或会覆盖范围外成果时再问。不要不经检查整边接受 ours/theirs。
 
-Good partitions have explicit boundaries, independent acceptance checks, and little file overlap. Common useful partitions include backend API, client UI after contract stabilization, migration, focused test coverage, or separate modules. Avoid splitting tightly coupled edits across workers.
+有未提交用户修改时可保留原工作区，在隔离的干净目标 worktree 完成已授权集成；不得自动丢弃或移动用户工作来满足脚本门槛。
 
-## Integration gates
-
-A branch is merge-ready only when:
-
-- its worktree is clean and work is committed;
-- its scoped verification passes;
-- public interfaces and data migrations have been reviewed;
-- documentation impact is recorded;
-- dependencies are already integrated or explicitly included;
-- no unresolved Git operation exists.
-
-After each merge, run tests covering both the merged branch and previously integrated behavior. After the final merge, run repository-level checks and `project_docs.py audit` when project documentation exists.
-
-## Conflict policy
-
-Conflicts indicate the original independence assumption was incomplete. Stop automation, inspect both intended behaviors, resolve at the target branch, rerun affected tests, and record any changed module boundary or business rule. Do not use blanket `ours` or `theirs` resolution.
-
+集成后按实际风险验证，达到原验收即交付；推送、历史改写与工作区清理各自遵循已有授权，不把它们捆绑为完成任务的必要条件。

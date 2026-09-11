@@ -1,14 +1,15 @@
 {
-  "description": "Check documentation impact once before a coding turn finishes.",
+  "description": "只读检查文档影响，不阻断任务、不自动创建项目文件。",
   "hooks": {
     "Stop": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PLUGIN_ROOT}/scripts/doc_guard.py\"",
+            "command": "python3 -X utf8 -c \"import os,runpy; runpy.run_path(os.path.join(os.environ.get('PLUGIN_ROOT') or os.environ['CLAUDE_PLUGIN_ROOT'],'scripts','doc_guard.py'),run_name='__main__')\"",
+            "commandWindows": "py -3 -X utf8 -c \"import os,runpy; runpy.run_path(os.path.join(os.environ.get('PLUGIN_ROOT') or os.environ['CLAUDE_PLUGIN_ROOT'],'scripts','doc_guard.py'),run_name='__main__')\"",
             "timeout": 15,
-            "statusMessage": "Checking project documentation impact"
+            "statusMessage": "检查相关文档影响"
           }
         ]
       }

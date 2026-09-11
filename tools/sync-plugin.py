@@ -4,7 +4,7 @@
 Hosts:
   zcode   full plugin: marketplace copy + versioned cache + installed_plugins.json
   claude  full plugin: marketplace copy (+ .claude-plugin manifest) + versioned cache + registry
-  codex   the four skills copied into ~/.codex/skills/<name>
+  codex   完整插件同步到 CLI 确认的本地源，再通过 codex plugin add 更新版本缓存
   kimi    the four skills copied into ~/.kimi/skills/<name>
   agents  the four skills copied into ~/.agents/skills/<name> (shared skill dir read by ZCode and friends)
 
@@ -18,6 +18,8 @@ import argparse
 import hashlib
 import json
 import shutil
+import subprocess
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -57,9 +59,10 @@ def diff_tree(expected: dict[str, str], actual_root: Path) -> list[str]:
 
 
 def sync_tree(source: Path, target: Path):
-    if target.exists():
-        shutil.rmtree(target)
-    shutil.copytree(source, target, ignore=shutil.ignore_patterns(*IGNORED))
+    # 增量覆盖同源文件，保留额外内容并由 verify 报告，禁止递归删除整个安装目录。
+    if source.resolve() == target.resolve():
+        return
+    shutil.copytree(source, target, dirs_exist_ok=True, ignore=shutil.ignore_patterns(*IGNORED))
 
 
 def read_json(path: Path) -> dict:
@@ -235,6 +238,70 @@ class Claude:
         return problems
 
 
+class Codex:
+    """使用宿主 CLI 更新完整插件，避免技能已更新而钩子仍停留在旧缓存。"""
+
+    id = "codex"
+    plugin_id = "ai-project-steward@personal"
+
+    def cli(self, *args: str) -> str:
+        executable = shutil.which("codex.cmd" if os.name == "nt" else "codex")
+        if not executable:
+            raise RuntimeError("找不到 Codex CLI，不能确认或更新已安装插件")
+        result = subprocess.run(
+            [executable, "plugin", *args], capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=60,
+        )
+        if result.returncode:
+            raise RuntimeError(result.stderr.strip() or result.stdout.strip() or "Codex CLI 失败")
+        return result.stdout
+
+    def installed(self) -> dict:
+        manifest = read_json(HOME / ".agents/plugins/marketplace.json")
+        if manifest.get("name") != "personal":
+            raise ValueError("当前同步目标仅支持已确认的 personal 本地市场")
+        listing = json.loads(self.cli("list", "--marketplace", "personal", "--json"))
+        entry = next((p for p in listing.get("installed", [])
+                      if p.get("pluginId") == self.plugin_id), None)
+        if not entry or entry.get("source", {}).get("source") != "local":
+            raise ValueError("未找到已安装的本地 ai-project-steward@personal")
+        return entry
+
+    def source(self, entry: dict) -> Path:
+        target = Path(entry["source"]["path"]).resolve()
+        if target.name != "ai-project-steward" or not target.is_dir():
+            raise ValueError("插件源路径不符合已安装插件目录约定")
+        return target
+
+    def sync(self):
+        entry = self.installed()
+        target = self.source(entry)
+        current = read_json(PLUGIN / ".codex-plugin/plugin.json")["version"]
+        # 同一版本内容变化时用官方 helper 换缓存戳，不手改市场和信任记录。
+        if diff_tree(tree_state(PLUGIN), target) and current == entry.get("version"):
+            helper = HOME / ".codex/skills/.system/plugin-creator/scripts/update_plugin_cachebuster.py"
+            if not helper.is_file():
+                raise RuntimeError("缺少官方缓存戳 helper；请安装 plugin-creator 后重试")
+            subprocess.run([sys.executable, str(helper), str(PLUGIN)], check=True, timeout=15)
+        sync_tree(PLUGIN, target)
+        print(self.cli("add", self.plugin_id).strip())
+
+    def verify(self) -> list[str]:
+        try:
+            entry = self.installed()
+            expected = tree_state(PLUGIN)
+            problems = diff_tree(expected, self.source(entry))
+            version = read_json(PLUGIN / ".codex-plugin/plugin.json")["version"]
+            if entry.get("version") != version:
+                problems.append(f"installed version {entry.get('version')} != {version}")
+            cache = HOME / ".codex/plugins/cache/personal/ai-project-steward" / version
+            problems += diff_tree(expected, cache)
+            problems += smoke_checks(cache)
+            return problems
+        except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
+            return [f"Codex 完整插件校验失败: {exc}"]
+
+
 class SkillHost:
     def __init__(self, id: str, root: Path):
         self.id, self.root = id, root
@@ -254,7 +321,7 @@ class SkillHost:
 HOSTS = [
     Zcode(),
     Claude(),
-    SkillHost("codex", HOME / ".codex/skills"),
+    Codex(),
     SkillHost("kimi", HOME / ".kimi/skills"),
     SkillHost("agents", HOME / ".agents/skills"),
 ]

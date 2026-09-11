@@ -2,10 +2,9 @@
 
 ## Evidence priority
 
-1. Release workflow or CI configuration that currently succeeds.
-2. Verified commands in README, AGENTS, or development documentation.
-3. Build manifests and standard toolchain conventions.
-4. A user-confirmed command or target.
+1. 用户本次明确的交付目标、版本与授权。
+2. 当前成功的项目发布流程或 CI 配置。
+3. 已核实的项目文档、构建清单与工具链惯例。
 
 ## Common outputs
 
@@ -21,4 +20,4 @@
 
 The table supplies discovery hints only. Never replace a repository-specific release pipeline with a guessed command.
 
-For service projects, the primary handoff is a versioned tar.gz deployment bundle with one top-level directory. Native APK, AAB, JAR, WAR, frontend bundles, and binaries become inputs to that deployment bundle when applicable.
+仅用户或项目明确采用服务部署包契约时使用单顶层目录 tar.gz。原生 APK/AAB/JAR/WAR 等按请求直接交付，不自动套归档或增加生命周期脚本。已有容器、云平台或原生发布链优先；不要为满足本参考而替换部署方式。

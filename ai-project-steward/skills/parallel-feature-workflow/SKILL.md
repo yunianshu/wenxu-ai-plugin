@@ -1,64 +1,30 @@
 ---
 name: parallel-feature-workflow
-description: 将功能拆分为相互独立的子任务，创建隔离的 Git worktree 分支，协调并行实现，逐个校验分支，并按依赖顺序把完成的工作合并到目标分支。当希望用多个分支或代理并发实现某个功能的不同部分时使用。Split a feature into independent subtasks, create isolated Git worktree branches, coordinate parallel implementation, verify each branch, and merge completed work into the target branch in dependency order. Use when the user wants multiple branches or agents to implement parts of a feature concurrently.
+description: 在用户明确要求多分支并行实现时，用隔离 Git worktree 分工、验证并按依赖合并。仅请求分析代理或普通多文件实现时，不自动创建分支、提交或合并。
 ---
 
-# Parallel Feature Workflow
+# 并行分支实现
 
-Use one Git worktree per subtask so parallel workers have isolated files and indexes. Prefer different modules or low-overlap boundaries; do not create parallel branches merely to increase activity.
+按实际独立边界分工，不为了增加活动而创建代理或分支。已有工作流授权包含必要本地分支和聚焦提交；普通实现授权不自动包含该工作流。
 
-Read [workflow.md](references/workflow.md) before creating branches or merging.
+## 准备与分工
 
-The deterministic helper is:
+检查目标分支、工作区和未完成 Git 操作。保护既有未提交修改，必要时在干净的独立工作区集成，不自动 stash/reset 用户工作。
 
-```text
-python3 "$PLUGIN_ROOT/scripts/worktree_flow.py" <command>
-```
+明确每项任务的职责、允许路径、依赖与验收；公共契约先稳定。将计划简要告知用户后按已授权范围执行；只有目标分支、业务取舍或授权范围确实不明时澄清，不再逐个审批子任务。
 
-Supported commands are `inspect`, `create`, `status`, `preflight-merge`, and `merge`.
+可用插件 scripts/worktree_flow.py 的 inspect/create/status/preflight-merge/merge；创建或合并前按需要读 [workflow.md](references/workflow.md)。一个实现子任务对应一个 worktree，不让多个代理写同一文件。只有用户或有效仓库指令授权代理委派时使用子代理。
 
-## Plan before mutation
+## 实现与集成
 
-1. Identify the target branch and verify the repository has no unresolved merge, rebase, or cherry-pick.
-2. Decompose the feature into independently testable subtasks with explicit ownership, allowed paths, dependencies, acceptance checks, and documentation impact.
-3. Keep shared contracts in an earlier foundation task. Downstream branches should start only after that contract is stable, or explicitly depend on its branch.
-4. Present the branch plan before creating worktrees when decomposition or merge order requires non-trivial judgment.
+分支完成必要实现、相关测试、文档影响评估与聚焦提交。文档、图表或打包技能按实际交付需要使用，不是每个分支的强制前置步骤。
 
-Use branch names like `feature/<feature-slug>/<task-slug>`. Sanitize names with the helper rather than interpolating untrusted text into shell commands.
+按依赖顺序集成，不能把失败测试当作可忽略门槛。遇到目标工作区脏、缺少分支或冲突时先诊断并处理已授权的安全恢复：普通实现冲突可基于双方意图自行解决并测试，不能机械停工或整边取 ours/theirs。业务意图无法判定、会覆盖用户成果或需改写已发布历史时暂停该步骤澄清。
 
-## Create and implement
+各次合并跑受影响集成检查，最终跑约定验收；无新变化无需重复同一全量检查。
 
-For each approved subtask, run:
+## 边界与完成
 
-```text
-worktree_flow.py create --base <base> --feature <feature> --task <task>
-```
+不默认推送、强推、删除分支、移除 worktree 或重写已发布历史；已有对应明确授权时无需再问。无授权清理不影响已完成实现的交付，保留工作区并简要报告即可。
 
-The helper creates a sibling worktree directory by default. Give each worker only its task, worktree path, allowed files, dependency assumptions, tests, and completion contract. If agent delegation is available and the user requested parallel execution, assign one worker per independent worktree.
-
-Each branch must:
-
-- read the repository's `AGENTS.md` and relevant project documents;
-- avoid unrelated refactors and files owned by another branch;
-- run the smallest relevant tests;
-- assess and synchronize documentation using `$project-doc-manager`;
-- update affected architecture or flow diagrams using `$project-diagrams`;
-- after integration, invoke `$project-packager` when the task requires a distributable artifact;
-- finish with a focused commit and a summary of changed files, tests, and remaining risks.
-
-## Integrate
-
-1. Run `status` and confirm every required branch has committed work and a clean worktree.
-2. Merge foundation and dependency branches first. Rebase or update dependent work only when the user or repository policy allows it.
-3. Run `preflight-merge` for the next branch. Stop on dirty target state, missing branch, unresolved operation, or failed branch verification.
-4. Run `merge` only from a clean target worktree whose current branch equals `--target`. The helper uses a non-fast-forward merge and never pushes.
-5. On conflict, stop. Report conflicting files and choose a resolution based on intended behavior; never accept one side wholesale without inspection.
-6. After every merge, run integration checks. Run the full agreed verification and documentation audit after the final merge.
-7. Do not delete branches or worktrees automatically. Offer cleanup only after successful integration and user confirmation.
-
-## Safety boundaries
-
-- Never push, force-push, delete branches, remove worktrees, or rewrite published history without explicit authorization.
-- Never merge into a dirty target branch.
-- Do not claim branches are independent when they modify the same contract or central file.
-- If a branch's tests fail, do not merge it merely because other branches passed.
+报告集成结果、提交/分支位置、验证与未完成事项。授权的工作流要推进到最终集成，不能只交几个完成但未整合的分支。

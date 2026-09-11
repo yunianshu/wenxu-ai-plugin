@@ -1,49 +1,35 @@
 ---
 name: project-packager
-description: 构建项目发布版本，产出带单一顶层版本目录以及 package/backup/restore/start/stop/upgrade 脚本契约的可部署 tar.gz 包。当实现必须以可下载、可安装、可升级或可回滚的发布产物收尾时使用。Build project releases and generate deployable tar.gz packages with one top-level version directory plus package, backup, restore, start, stop, and upgrade shell scripts. Use when implementation must end with a downloadable, installable, upgradeable, or rollback-capable release.
+description: 按用户指定目标和项目现有发布链构建、校验与交付真实发布产物。保留 APK/AAB/JAR 等原生格式；仅服务部署包任务使用带备份、恢复和升级脚本的 tar.gz 契约。
 ---
 
-# Project Packager
+# 项目产物交付
 
-Produce the project's real release artifact, not an arbitrary archive of caches and source directories.
+优先使用已验证的项目构建与发布流程，交付用户需要的格式。构建成功不等于发布成功，发布也不等于目标环境运行验证通过。
 
-Run the helper when useful:
+## 确定交付物
 
-```text
-python3 "$PLUGIN_ROOT/scripts/release_artifacts.py" detect --root <repo>
-python3 "$PLUGIN_ROOT/scripts/release_artifacts.py" version --root <repo>
-python3 "$PLUGIN_ROOT/scripts/release_artifacts.py" scaffold --root <repo> [--version <user-confirmed-initial-version>]
-python3 "$PLUGIN_ROOT/scripts/release_artifacts.py" collect --root <repo> --artifact '<verified-output-glob>'
-python3 "$PLUGIN_ROOT/scripts/release_artifacts.py" bundle --root <repo> --name <project> --include '<package-file-glob>'
-python3 "$PLUGIN_ROOT/scripts/release_artifacts.py" audit --root <repo>
-```
+- APK/AAB、IPA、JAR/WAR、可执行文件：构建并交付原生产物，不强制再套 tar.gz 或补建服务生命周期脚本。
+- 服务部署包：项目已有约定优先；要求安装/升级/回滚时，再使用本技能 tar.gz 契约。
+- 源码归档：仅归档请求范围与必要源码，不加入缓存、秘密或业务数据。
+- 用户已有产物时先核对它与当前目标、版本及签名是否匹配，避免重复构建。
 
-Read [packaging-guidance.md](references/packaging-guidance.md) and [deployment-scripts.md](references/deployment-scripts.md) before creating scripts or a release package.
+先读构建清单、锁文件、现有 release/CI 与相关验证文档。可用 scripts/release_artifacts.py detect/version/collect 辅助发现；不为运行 helper 改动不相关配置。
 
-## Package workflow
+## 版本、批准与验证
 
-1. Read `AGENTS.md`, `README.md`, build manifests, lockfiles, CI/release workflows, and `docs/ai/verification.md`.
-2. Run `detect`. Treat its plans as candidates; prefer the repository's documented or CI-proven release command.
-3. Resolve the version from the project's authoritative version source. Prefer root `VERSION`, then the primary build manifest (`versionName`, `pubspec.yaml`, `package.json`, `pom.xml`, `Cargo.toml`, or `pyproject.toml`). Never invent or independently increment a version. If multiple sources disagree, stop and report every conflicting source. If the project declares no version anywhere, agree an initial version with the user first, then record it via `scaffold --version <confirmed>` (or directly in the primary manifest) — still never pick a number yourself.
-4. Generate or update repository-specific `package.sh`, `backup.sh`, `restore.sh`, `start.sh`, `stop.sh`, and `upgrade.sh`, plus Windows one-click `start.bat` and `stop.bat` for starting and stopping the local service on Windows hosts. When any of them is missing, run `scaffold` first: it generates stack-aware script templates for exactly the missing files (never overwriting existing ones) and reports the remaining `TODO(project)` markers. Then specialize every template for the actual process manager, database, storage, health check, ownership, and paths. `bundle` also scaffolds missing scripts automatically, but a package containing scaffolded templates must still be reviewed before release. Do not emit generic scripts that ignore the actual process manager, database, storage, health check, ownership, or paths.
-5. Run shell syntax checks and safe dry-runs where supported. Exercise backup and restore against disposable data; never test restore against production data.
-6. Run the smallest required verification, then the official release build.
-7. Assemble `<project>-v<version>-<YYYYMMDDHHMMSS>/` and create a same-named `.tar.gz`. The archive must contain exactly one top-level directory. Include runtime resources, migrations, example configuration, VERSION, scripts, and checksums; exclude mutable production data.
-8. Run `audit` and inspect the archive listing. Report commands, package path, archive SHA-256, signing status, health-check status, and anything not verified.
+从明确的发布目标和权威版本源解析版本。工作区不同组件版本不同不一定是冲突；先确认打包对象。真正的同一产物版本冲突或缺少正式版本决定时，只暂停定版/发布，继续构建调查和可独立验证。用户已明确版本或发布动作时不重复确认。
 
-## Rules
+用最小充分验证后运行真实构建。发布到外部、覆盖部署、执行破坏性恢复需相应授权；任务只要求构建时，不能自动上传。已明确要求上传到确定渠道时完成核对后直接上传，不另设例行批准门。响应丢失先查询远端状态，避免重复发布。
 
-- Never package secrets, signing keys, local environment files, databases, user data, logs, IDE state, caches, or dependency directories.
-- `scaffold` output is a starting point, never a finished release: resolve every `TODO(project)` marker (service manager, database, health endpoint, ownership, paths) against repository evidence before packaging. It never overwrites existing scripts and never invents a version on its own.
-- Preserve native formats: APK/AAB for Android, IPA/archive for iOS, JAR/WAR for JVM, executable for Go/Rust, and the deployable frontend bundle for web projects.
-- Do not claim a debug build is production-ready. Clearly label unsigned, debug, simulator-only, or environment-specific outputs.
-- Use `git archive` only when the user explicitly wants source code or the project has no executable/deployable release format.
-- Container images require a confirmed image name and version. Report the immutable digest when available.
-- Do not overwrite unrelated existing artifacts; use versioned names when collisions are possible.
-- The package directory, tar.gz filename, bundled `VERSION`, and manifest version must all equal the detected project version. A CLI `--version` value is only an assertion and must fail when it differs from the project.
-- `upgrade.sh` runs from the extracted new-version directory. It must discover the currently installed directory from explicit configuration or a stable symlink, back up current data, stop the old service, replace immutable resources atomically, run compatible migrations, preserve configuration/data, start the new version, and verify health. On failure, restore the previous version and restart it.
-- Backup archives must contain a manifest and never include themselves. Restore must validate the archive, refuse ambiguous targets, and require explicit confirmation for destructive replacement unless invoked by the controlled rollback path.
+不要把 debug、未签名或仅模拟器验证的结果称为正式可用；准确报告限制即可，不为额外验证无限阻止交付已请求产物。
 
-## Completion
+## 服务部署包契约（仅适用时）
 
-Return clickable artifact links when the environment supports them. State target, version, build type, signing status, checksum verification, and any real-device or deployment check not performed.
+阅读 [packaging-guidance.md](references/packaging-guidance.md) 与 [deployment-scripts.md](references/deployment-scripts.md)。需要单顶层目录 tar.gz 时，解析权威版本，按真实服务的进程、数据、健康检查与平台细化 package/backup/restore/start/stop/upgrade 脚本。
+
+只对明确采用此契约的部署任务运行 scaffold/bundle（这些命令会创建缺失脚本）；替换 TODO 后再交付。Windows bat 仅在交付范围包含 Windows 服务启动时生成。备份恢复在可丢弃数据上验证，禁止拿生产库试恢复。
+
+## 完成
+
+核对产物实际存在、版本/平台/签名、归档内容与校验和，排除密钥、业务数据和缓存。按任务报告文件路径、必要安装/运行说明与未验证部分；不强制修改版本、不自动提交，不为原生产物增加额外发布基础设施。
