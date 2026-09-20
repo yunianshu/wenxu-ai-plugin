@@ -8,7 +8,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Add
 
 ### Fixed
 
-- `parallel-feature-workflow` 集成完成后分支 worktree 目录残留：`worktree_flow.py` 新增 `remove` 子命令（拒绝未合并/脏工作区，`--force` 仅限放弃干净工作区，变空 `.worktrees` 父目录一并清理），技能约定改为默认清理已合并分支的空间目录并保留分支引用，新增真实 Git 流程回归测试。
+- `parallel-feature-workflow` 集成完成后分支 worktree 目录残留：`worktree_flow.py` 新增 `remove` 子命令（拒绝未合并/脏工作区，`--force` 仅限放弃干净工作区，变空 `.worktrees` 父目录一并清理，`--delete-branch` 连分支引用一起删除），技能约定改为完成后先询问用户、确认后才清理目录与分支，新增真实 Git 流程回归测试。
 
 ### Changed
 

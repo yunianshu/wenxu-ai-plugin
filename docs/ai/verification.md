@@ -7,7 +7,7 @@ python3 -X utf8 -B -m unittest discover -s "ai-project-steward/tests" -v
 python3 -X utf8 "ai-project-steward/scripts/project_docs.py" audit --root .
 ```
 
-钩子测试使用真实临时 Git 仓库和等价宿主 payload；覆盖异常输入、中文空格路径、只读性、非阻断输出、去重及子进程错误。worktree 测试在真实 Git 仓库上走 create→commit→merge→remove 全流程，断言已合并分支的空间目录被删除、变空父目录被清理、脏工作区与未合并分支被拒绝且分支引用保留。Windows 下还执行清单中的 PowerShell、pwsh 和 cmd 启动命令。
+钩子测试使用真实临时 Git 仓库和等价宿主 payload；覆盖异常输入、中文空格路径、只读性、非阻断输出、去重及子进程错误。worktree 测试在真实 Git 仓库上走 create→commit→merge→remove 全流程，断言已合并分支的空间目录被删除、变空父目录被清理、`--delete-branch` 连分支引用一起删除、脏工作区与未合并分支被拒绝且默认分支引用保留。Windows 下还执行清单中的 PowerShell、pwsh 和 cmd 启动命令。
 
 ## 分发校验
 

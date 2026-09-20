@@ -52,27 +52,51 @@ class WorktreeRemoveTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         return Path(payload["path"])
 
+    def branch_exists(self, branch):
+        proc = subprocess.run(
+            ["git", "-C", str(self.root), "show-ref", "--verify", "--quiet", f"refs/heads/{branch}"],
+        )
+        return proc.returncode == 0
+
+    def merge_branch(self):
+        result, _ = self.call("merge", "--branch", self.branch, "--target", "main")
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_merged_branch_worktree_is_removed_and_branch_kept(self):
         path = self.create_branch()
         (path / "feature.txt").write_text("并行成果\n", encoding="utf-8")
         self.commit(path, "并行实现")
-
-        result, _ = self.call("merge", "--branch", self.branch, "--target", "main")
-        self.assertEqual(result.returncode, 0, result.stderr)
+        self.merge_branch()
 
         result, payload = self.call("remove", "--branch", self.branch, "--target", "main")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue(payload["removed"])
+        self.assertFalse(payload["branch_deleted"])
         self.assertFalse(path.exists())
         self.assertEqual(len(self.worktrees()), 1)  # 只剩主工作区
         parent = self.root.parent / f"{self.root.name}.worktrees"
         self.assertFalse(parent.exists())  # 变空的父目录一并清理
-        kept = subprocess.run(
-            ["git", "-C", str(self.root), "show-ref", "--verify", "--quiet", f"refs/heads/{self.branch}"],
-        )
-        self.assertEqual(kept.returncode, 0)  # 分支引用保留，交给已有授权决定
+        self.assertTrue(self.branch_exists(self.branch))  # 不带 --delete-branch 时分支引用保留
         merged_text = (self.root / "feature.txt").read_text(encoding="utf-8")
         self.assertEqual(merged_text, "并行成果\n")  # 合并成果仍在主工作区
+
+    def test_remove_with_delete_branch_removes_worktree_and_branch(self):
+        path = self.create_branch()
+        (path / "feature.txt").write_text("并行成果\n", encoding="utf-8")
+        self.commit(path, "并行实现")
+        self.merge_branch()
+
+        result, payload = self.call(
+            "remove", "--branch", self.branch, "--target", "main", "--delete-branch"
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(payload["removed"])
+        self.assertTrue(payload["branch_deleted"])
+        self.assertFalse(path.exists())
+        self.assertFalse(self.branch_exists(self.branch))  # 分支引用一并删除
+        self.assertEqual(len(self.worktrees()), 1)
+        merged_text = (self.root / "feature.txt").read_text(encoding="utf-8")
+        self.assertEqual(merged_text, "并行成果\n")  # 合并成果不受分支删除影响
 
     def test_unmerged_branch_is_refused(self):
         path = self.create_branch()
@@ -103,6 +127,20 @@ class WorktreeRemoveTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue(payload["removed"])
         self.assertFalse(path.exists())
+
+    def test_force_with_delete_branch_discards_unmerged_branch(self):
+        path = self.create_branch()
+        (path / "feature.txt").write_text("明确放弃的成果\n", encoding="utf-8")
+        self.commit(path, "已提交但明确放弃")
+
+        result, payload = self.call(
+            "remove", "--branch", self.branch, "--target", "main", "--force", "--delete-branch"
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(payload["removed"])
+        self.assertTrue(payload["branch_deleted"])
+        self.assertFalse(path.exists())
+        self.assertFalse(self.branch_exists(self.branch))
 
     def test_remove_main_worktree_is_refused(self):
         result, payload = self.call("remove", "--branch", "main", "--target", "main")

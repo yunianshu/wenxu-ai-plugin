@@ -24,7 +24,7 @@ All notable changes to AI Project Steward are documented here.
 
 ### Fixed
 
-- `parallel-feature-workflow` no longer leaves per-branch worktree directories behind after integration: `worktree_flow.py` gained a `remove` command that refuses dirty or unmerged worktrees (`--force` only discards a clean one), prunes the `.worktrees` parent once empty, and always keeps branch refs; the skill now cleans merged worktrees by default and reports anything it had to keep.
+- `parallel-feature-workflow` no longer leaves per-branch worktree directories behind after integration: `worktree_flow.py` gained a `remove` command that refuses dirty or unmerged worktrees (`--force` only discards a clean one), prunes the `.worktrees` parent once empty, and can also delete the branch ref via `--delete-branch`; the skill now asks the user after integration and cleans worktree plus branch only on confirmation, keeping and reporting anything unresolved.
 - Windows 钩子在 Python 内解析插件环境变量，兼容 PowerShell 与 cmd；异常 cwd、非字符串消息、Git 缺失与超时不再导致未捕获异常。新增隔离回归测试。
 
 - ZCode hook startup now uses the cross-compatible `CLAUDE_PLUGIN_ROOT` path variable instead of Codex-only `PLUGIN_ROOT`, with a native ZCode plugin manifest included.
