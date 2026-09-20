@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Add
 
 ## [Unreleased]
 
+### Fixed
+
+- `parallel-feature-workflow` 集成完成后分支 worktree 目录残留：`worktree_flow.py` 新增 `remove` 子命令（拒绝未合并/脏工作区，`--force` 仅限放弃干净工作区，变空 `.worktrees` 父目录一并清理），技能约定改为默认清理已合并分支的空间目录并保留分支引用，新增真实 Git 流程回归测试。
+
 ### Changed
 
 - Codex 分发改为同步 CLI 确认的本地插件源并执行官方 plugin add，验证安装版本与完整缓存，修复只复制 Skills 导致钩子仍旧的问题。

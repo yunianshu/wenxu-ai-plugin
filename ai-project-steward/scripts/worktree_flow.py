@@ -169,6 +169,52 @@ def merge(root: Path, branch: str, target: str) -> dict:
     }
 
 
+def merged_into(root: Path, branch: str, target: str) -> bool:
+    return git(root, "rev-list", "--count", f"{target}..{branch}", check=True).stdout.strip() == "0"
+
+
+def remove(root: Path, branch: str, target: str, force: bool) -> dict:
+    worktree = branch_worktree(root, branch)
+    if worktree is None:
+        raise RuntimeError(f"no worktree registered for branch: {branch}")
+    worktree = worktree.resolve()
+    if not worktree.exists():
+        git(root, "worktree", "prune")
+        raise RuntimeError(
+            f"worktree directory is gone but its registration remained; pruned stale entry for {branch}"
+        )
+    if worktree == root:
+        raise RuntimeError("refusing to remove the repository's main worktree")
+    if dirty(worktree):
+        raise RuntimeError(f"worktree is dirty, commit or preserve changes first: {worktree}")
+    if operation_in_progress(worktree):
+        raise RuntimeError(f"worktree has an unfinished Git operation: {worktree}")
+    if not force:
+        if not branch_exists(root, branch):
+            raise RuntimeError(f"branch no longer exists, re-run with --force: {branch}")
+        if not merged_into(root, branch, target):
+            ahead = git(root, "rev-list", "--count", f"{target}..{branch}", check=True).stdout.strip()
+            raise RuntimeError(
+                f"branch has {ahead} commit(s) not merged into {target}; "
+                "merge first or pass --force to discard the worktree"
+            )
+    proc = git(root, "worktree", "remove", str(worktree))
+    if proc.returncode != 0:
+        raise RuntimeError(proc.stderr.strip() or proc.stdout.strip())
+    pruned_parent = False
+    parent = default_worktree(root, branch).parent
+    if parent != root.parent and parent.is_dir() and not any(parent.iterdir()):
+        parent.rmdir()
+        pruned_parent = True
+    return {
+        "branch": branch,
+        "target": target,
+        "path": str(worktree),
+        "removed": True,
+        "pruned_empty_parent": pruned_parent,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", default=".")
@@ -184,6 +230,10 @@ def main() -> int:
         item = sub.add_parser(name)
         item.add_argument("--branch", required=True)
         item.add_argument("--target", required=True)
+    remove_parser = sub.add_parser("remove")
+    remove_parser.add_argument("--branch", required=True)
+    remove_parser.add_argument("--target", required=True)
+    remove_parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
     try:
         root = repo_root(args.root)
@@ -193,6 +243,8 @@ def main() -> int:
             result = create(root, args.base, args.feature, args.task, args.path)
         elif args.command == "preflight-merge":
             result = preflight(root, args.branch, args.target)
+        elif args.command == "remove":
+            result = remove(root, args.branch, args.target, args.force)
         else:
             result = merge(root, args.branch, args.target)
         print(json.dumps(result, ensure_ascii=False, indent=2))

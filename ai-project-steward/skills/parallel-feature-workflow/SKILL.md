@@ -13,7 +13,7 @@ description: 在用户明确要求多分支并行实现时，用隔离 Git workt
 
 明确每项任务的职责、允许路径、依赖与验收；公共契约先稳定。将计划简要告知用户后按已授权范围执行；只有目标分支、业务取舍或授权范围确实不明时澄清，不再逐个审批子任务。
 
-可用插件 scripts/worktree_flow.py 的 inspect/create/status/preflight-merge/merge；创建或合并前按需要读 [workflow.md](references/workflow.md)。一个实现子任务对应一个 worktree，不让多个代理写同一文件。只有用户或有效仓库指令授权代理委派时使用子代理。
+可用插件 scripts/worktree_flow.py 的 inspect/create/status/preflight-merge/merge/remove；创建或合并前按需要读 [workflow.md](references/workflow.md)。一个实现子任务对应一个 worktree，不让多个代理写同一文件。只有用户或有效仓库指令授权代理委派时使用子代理。
 
 ## 实现与集成
 
@@ -25,6 +25,6 @@ description: 在用户明确要求多分支并行实现时，用隔离 Git workt
 
 ## 边界与完成
 
-不默认推送、强推、删除分支、移除 worktree 或重写已发布历史；已有对应明确授权时无需再问。无授权清理不影响已完成实现的交付，保留工作区并简要报告即可。
+分支按依赖全部集成后，默认用 `worktree_flow.py remove --branch … --target …` 清理已合并分支的 worktree 目录（含变空后的 `.worktrees` 父目录）；清理失败或分支未合并时保留并说明，不得用 `--force` 丢弃有未合并成果的工作区。不默认推送、强推、删除分支引用或重写已发布历史；已有对应明确授权时无需再问。
 
 报告集成结果、提交/分支位置、验证与未完成事项。授权的工作流要推进到最终集成，不能只交几个完成但未整合的分支。
