@@ -6,6 +6,7 @@ All notable changes to AI Project Steward are documented here.
 
 ### Added
 
+- Windows one-click `dev.bat` in `scaffold` output: a foreground local debug launcher that streams logs to the double-click window, stops on Ctrl+C or window close, embeds stack-aware commands (`call npm run start`, `java -jar app.jar`, the built executable, foreground `docker compose up`), stays out of the `start.bat`/`stop.bat` PID lifecycle, and keeps the only-create-missing rule with `TODO(project)` markers.
 - Subdirectory doc sets for plugin-collection repositories: `project_docs.py --subdir <plugin>` initializes, syncs, and audits a doc set inside a plugin subdirectory; without `--subdir`, `sync` and `audit` also discover and cover every subdirectory doc set marked by `.project-docs.json`, and `impact` filters changed paths to the selected subdirectory.
 - Windows one-click `start.bat`/`stop.bat` in `scaffold` output: CRLF line endings, PID-file idempotency, `run.log` output capture, optional `HEALTH_URL` readiness probing, error `pause` for double-click visibility, and `docker compose up/down` for Docker projects.
 - `release_artifacts.py scaffold`: generates stack-aware deployment script templates (package/backup/restore/start/stop/upgrade) for exactly the missing files when a repository has no packaging files, records a user-confirmed initial version into `VERSION`, and reports remaining `TODO(project)` markers. `bundle` now scaffolds missing scripts automatically and flags them in its result.
@@ -24,6 +25,7 @@ All notable changes to AI Project Steward are documented here.
 
 ### Fixed
 
+- `release_artifacts.py` `bundle`/`collect` resolve the project root before path math, so direct library calls with unresolved Windows paths (e.g. short-form `ADMINI~1` temp roots) no longer crash on `relative_to`.
 - `parallel-feature-workflow` no longer leaves per-branch worktree directories behind after integration: `worktree_flow.py` gained a `remove` command that refuses dirty or unmerged worktrees (`--force` only discards a clean one), prunes the `.worktrees` parent once empty, and can also delete the branch ref via `--delete-branch`; the skill now asks the user after integration and cleans worktree plus branch only on confirmation, keeping and reporting anything unresolved.
 - Windows 钩子在 Python 内解析插件环境变量，兼容 PowerShell 与 cmd；异常 cwd、非字符串消息、Git 缺失与超时不再导致未捕获异常。新增隔离回归测试。
 

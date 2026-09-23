@@ -20,7 +20,7 @@ Generate scripts for the repository's actual deployment model. All scripts use P
 └── .env.example                # never a real secret-bearing .env
 ```
 
-The tar.gz contains exactly this single top-level directory. Optional Dockerfile, Compose, nginx, status, restart, log helpers, and the Windows one-click `start.bat`/`stop.bat` are included only when the project uses them.
+The tar.gz contains exactly this single top-level directory. Optional Dockerfile, Compose, nginx, status, restart, log helpers, and the Windows one-click `dev.bat`/`start.bat`/`stop.bat` are included only when the project uses them.
 
 ## Version source
 
@@ -39,7 +39,11 @@ Read the version from the project's existing authoritative source. Use a root VE
 
 ## Windows one-click scripts
 
-`scaffold` also generates `start.bat` and `stop.bat` so the local service can be started and stopped with one double-click on Windows hosts. They use CRLF line endings, resolve their own directory via `cd /d "%~dp0"`, stay idempotent (re-running `start.bat` reports the running PID and exits 0; `stop.bat` exits 0 when already stopped), record the process id in `app.pid`, write service output to `run.log`, pause on errors so double-click windows stay visible, and probe `HEALTH_URL` (optional environment variable) for readiness when set. Docker projects use `docker compose up -d`/`down` with a `COMPOSE_FILE` override instead of the PID model. The same rules apply: replace the `TODO(project)` markers with the real start command or Windows service manager (NSSM, Task Scheduler, PM2, Windows service) and never invent paths, ports, or credentials.
+`scaffold` also generates `dev.bat`, `start.bat`, and `stop.bat` so the local service can be started for debugging, or started and stopped as a managed service, with one double-click on Windows hosts. They use CRLF line endings, resolve their own directory via `cd /d "%~dp0"`, and pause on errors so double-click windows stay visible.
+
+`dev.bat` is the local debug launcher: it runs the service in the foreground with logs streaming to the double-click window, stops on Ctrl+C or window close, and deliberately writes no `app.pid` so it never interferes with the `start.bat`/`stop.bat` lifecycle. The embedded command is stack-aware (`call npm run start` for Node — `call` because `npm` is itself a batch file, `java -jar app.jar` for JVM, the built executable for Go/Rust, foreground `docker compose up` with a `COMPOSE_FILE` override for Docker). Replace its `TODO(project)` marker with the real debug command (dev/watch script, JVM debug agent, compose override for debug ports) before delivery.
+
+`start.bat` and `stop.bat` manage the background service lifecycle: they stay idempotent (re-running `start.bat` reports the running PID and exits 0; `stop.bat` exits 0 when already stopped), record the process id in `app.pid`, write service output to `run.log`, and probe `HEALTH_URL` (optional environment variable) for readiness when set. Docker projects use `docker compose up -d`/`down` with a `COMPOSE_FILE` override instead of the PID model. The same rules apply: replace the `TODO(project)` markers with the real start command or Windows service manager (NSSM, Task Scheduler, PM2, Windows service) and never invent paths, ports, or credentials.
 
 ## Upgrade model
 

@@ -28,7 +28,7 @@ description: 按用户指定目标和项目现有发布链构建、校验与交�
 
 阅读 [packaging-guidance.md](references/packaging-guidance.md) 与 [deployment-scripts.md](references/deployment-scripts.md)。需要单顶层目录 tar.gz 时，解析权威版本，按真实服务的进程、数据、健康检查与平台细化 package/backup/restore/start/stop/upgrade 脚本。
 
-只对明确采用此契约的部署任务运行 scaffold/bundle（这些命令会创建缺失脚本）；替换 TODO 后再交付。Windows bat 仅在交付范围包含 Windows 服务启动时生成。备份恢复在可丢弃数据上验证，禁止拿生产库试恢复。
+只对明确采用此契约的部署任务运行 scaffold/bundle（这些命令会创建缺失脚本）；替换 TODO 后再交付。Windows 一键脚本按用途分工：`dev.bat` 前台启动本地调试（实时日志、Ctrl+C/关窗即停、不写 app.pid），`start.bat`/`stop.bat` 管理后台服务生命周期；仅在交付范围包含 Windows 时随包交付。备份恢复在可丢弃数据上验证，禁止拿生产库试恢复。
 
 ## 完成
 
